@@ -1,22 +1,40 @@
-const express = require("express")
-const sqlite3 = require("sqlite3").verbose()
-const cors = require("cors")
-const bcrypt = require("bcrypt")
-const { log } = require("console")
+const express = require('express')
+const sqlite3 = require('sqlite3').verbose()
+const cors = require('cors')
+const bcrypt = require('bcrypt')
 
 const app = express()
-const  PORT =  3000
+const PORT = 3000
 
 app.use(cors())
 app.use(express.json())
 
-//Criar um banco sqlite e tabela
-const db = new sqlite3.Database("./database.db")
+//Criar banco sqlite e tabela
+const db = new sqlite3.Database('./Database.db')
 
-db.run(`CREATE TABLE IF NOT EXISTS usuarios(id INTEGER PRIMARY KEY AUTOINCREMENT, nome TEXT, email TEXT, senha TEXT)`)
+//Criar tabela usuarios
+db.run(`CREATE TABLE IF NOT EXISTS usuarios (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    nome TEXT,
+    email TEXT,
+    senha TEXT
+    )
+`)
 
-//Cadastrar usuario
-app.post("/usuarios", async (req, res) => {
+
+
+
+app.post('/', async (req, res) => {
+    res.json({
+        'teste': 'ok'
+    })
+})
+
+
+
+
+//Cadastro usuario
+app.post('/usuarios', async (req, res) =>{
 
     console.log(req.body);
 
@@ -24,28 +42,61 @@ app.post("/usuarios", async (req, res) => {
     let email = req.body.email
     let senha = req.body.senha
 
-    let senhaHash = await bcrypt.hash(senha, 10)
-    console.log(senhaHash);
+    let senhahash = await bcrypt.hash(senha, 10)
+    console.log(senhahash);
 
-    //Inserir no banco de dados
-    db.run(`INSERT INTO usuarios (nome, email, senha) VALUE(?, ?, ?)`,
-        [nome, email, senhaHash],
-        res.json({
-            id: this.lastID,
-            nome,
-            email
+//inserir no banco de dados
+db.run(`INSERT INTO usuario (nome, email, senha)
+VALUES (?, ?, ?)`,
+    [nome, email, senhahash],
+    res.json({
+        id: this.lastID,
+        nome,
+        email
         })
     )
-
-
 })
 
-//Listar todos os usuarios
-app.get("/usuarios",(req,res) =>{
+//selecionar um usuario
+app.get('usuarios/:id', (req,res) => {
+    let idUsuario = req.paramas.id;
+
+    db.get(`SELECT id, nome, email FROM usuarios 
+    WHERE id = ?`,
+    [idUsuario], (err, row) => {
+        if (row) {
+            res.json(row)
+        } else{
+            res.status(404).json({
+                'message' : 'Usuario não encontrado.'
+            })
+        }
+    })
+})
+
+//listar todos os usuarios
+
+app.get("/usuarios",(req, res) =>{
     db.all(`SELECT id, nome, email FROM usuarios`, [], (err, rows)=>{
         res.json(rows)
     })
 })
 
-//Iniciar o sever
+//Deletar usuario
+app.delete("usuarios/:id", (req, res) => {
+    let idUsuario = req.params.id
+
+    db.get(`DELETE FROM usuarios WHILE id = ?`,
+        [idUsuario], function(err, result){
+
+        })
+    } else {
+        res.status(404).json({
+            "message" : "Usuarios nao encontrado"
+        })
+    }
+
+})
+
+//Iniciar o server
 app.listen(PORT, () => console.log(`Servidor rodando em http://localhost:${PORT}`));
